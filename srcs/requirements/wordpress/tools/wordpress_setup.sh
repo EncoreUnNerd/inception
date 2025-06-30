@@ -10,8 +10,10 @@ WP_ADMIN_PASSWORD=$(echo $CREDENTIALS | cut -d':' -f2)
 
 # Attendre que MariaDB soit prêt
 until mysql -h$WORDPRESS_DB_HOST -u$DB_USER -p$DB_PASSWORD -e "SELECT 1" >/dev/null 2>&1; do
+	echo "waiting"
     sleep 2
 done
+echo "no more waiting"
 
 if [ ! -f /var/www/html/wp-config.php ]; then
     wp core config --path=/var/www/html \
