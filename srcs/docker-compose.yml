@@ -1,0 +1,79 @@
+services:
+    mariadb:
+        build: ./requirements/mariadb
+        container_name: mariadb
+        environment:
+            MYSQL_DATABASE: ${DB_NAME}
+            MYSQL_USER: ${DB_USER}
+            MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+            MYSQL_PASSWORD_FILE: /run/secrets/db_password
+        secrets:
+            - db_root_password
+            - db_password
+        volumes:
+            - wordpress_db:/var/lib/mysql
+        restart: on-failure
+        networks:
+            - network_wordpress
+
+    nginx:
+        build: ./requirements/nginx
+        container_name: nginx
+        ports:
+            - "443:443"
+        environment:
+            DOMAIN_NAME: ${DOMAIN_NAME}
+        depends_on:
+            - wordpress
+        restart: on-failure
+        networks:
+            - network_wordpress
+
+    wordpress:
+        build: ./requirements/wordpress
+        container_name: wordpress
+        environment:
+            DB_NAME: ${DB_NAME}
+            DB_USER: ${DB_USER}
+            WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+            DOMAIN_NAME: ${DOMAIN_NAME}
+            WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL}
+            WORDPRESS_USER: ${WORDPRESS_USER}
+            WORDPRESS_USER_EMAIL: ${WORDPRESS_USER_EMAIL}
+            WORDPRESS_USER_PASSWORD: ${WORDPRESS_USER_PASSWORD}
+        secrets:
+            - db_password
+            - credentials
+        volumes:
+            - wordpress_files:/var/www/html
+        depends_on:
+            - mariadb
+        restart: on-failure
+        networks:
+            - network_wordpress
+
+volumes:
+    wordpress_db:
+        driver: local
+        driver_opts:
+            type: none
+            device: /home/mhenin/data/mariadb
+            o: bind
+
+    wordpress_files:
+        driver: local
+        driver_opts:
+            type: none
+            device: /home/mhenin/data/wordpress
+            o: bind
+
+networks:
+    network_wordpress:
+
+secrets:
+    db_root_password:
+        file: ../secrets/db_root_password.txt
+    db_password:
+        file: ../secrets/db_password.txt
+    credentials:
+        file: ../secrets/credentials.txt
