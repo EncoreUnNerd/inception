@@ -1,0 +1,11 @@
+En gros la je me prend un 502, principalement parceque le script init pour wordpress reste bloquer a la boucle pour se co a mariadb.
+J'ai reussit a permettre d'avancer en allant dans les parametre du container mariadb et a autorise 0.0.0.0 dans les bind-adresses, mais je ne veut pas faire comme ca car je trouve ca un peut trop diy, mais si c'est la meilleur methode pourquoi pas.
+ensuite apres avoir by-pass la boucle et bah PHP-fpm ou quelque chose dans le genre ne pouvait pas se lancer en gros j'ai eu cette erreur :
+wordpress    | [30-Jun-2025 16:45:44] ERROR: Unable to create the PID file (/run/php/php7.4-fpm.pid).: No such file or directory (2)
+wordpress    | [30-Jun-2025 16:45:44] ERROR: FPM initialization failed
+
+et c'est tout.
+
+donc objectif :
+ - patch la boucle infini d'une meilleur maniere
+ - trouver pourquoi php-fpm ne peut pas se lancer correctement.

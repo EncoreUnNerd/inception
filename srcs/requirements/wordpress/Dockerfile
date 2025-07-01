@@ -19,10 +19,11 @@ RUN apt-get update && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /var/www/html && \
+# Créer les répertoires nécessaires pour PHP-FPM
+RUN mkdir -p /run/php && \
+	mkdir -p /var/www/html && \
 	chown -R www-data:www-data /var/www/html && \
 	chmod -R 755 /var/www/html
-
 
 # Installation de WP-CLI avec le lien fonctionnel
 RUN wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
