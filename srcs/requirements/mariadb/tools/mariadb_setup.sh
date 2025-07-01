@@ -26,27 +26,29 @@ if [ ! -f "/var/lib/mysql/mysql/user.MYD" ]; then
         sleep 2
     done
 
+    echo "Enabling grant tables..."
+    mysql -e "FLUSH PRIVILEGES;"
+
     echo "Setting up database and users..."
 
-    # Créer un script SQL temporaire
-    cat > /tmp/setup.sql << EOF
-CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
-CREATE USER '${MYSQL_USER}'@'%' IDENTIFIED BY '${DB_PASSWORD}';
-CREATE USER '${MYSQL_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
-CREATE USER '${MYSQL_USER}'@'172.%' IDENTIFIED BY '${DB_PASSWORD}';
-CREATE USER '${MYSQL_USER}'@'%.network_wordpress' IDENTIFIED BY '${DB_PASSWORD}';
+    # Créer la base de données
+    mysql -e "CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;"
 
-GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
-GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'localhost';
-GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'172.%';
-GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%.network_wordpress';
+    # Créer les utilisateurs
+    mysql -e "CREATE USER '${MYSQL_USER}'@'%' IDENTIFIED BY '${DB_PASSWORD}';"
+    mysql -e "CREATE USER '${MYSQL_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';"
+    mysql -e "CREATE USER '${MYSQL_USER}'@'172.%' IDENTIFIED BY '${DB_PASSWORD}';"
+    mysql -e "CREATE USER '${MYSQL_USER}'@'%.network_wordpress' IDENTIFIED BY '${DB_PASSWORD}';"
 
-ALTER USER 'root'@'localhost' IDENTIFIED BY '${DB_ROOT_PASSWORD}';
-FLUSH PRIVILEGES;
-EOF
+    # Accorder les privilèges
+    mysql -e "GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';"
+    mysql -e "GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'localhost';"
+    mysql -e "GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'172.%';"
+    mysql -e "GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%.network_wordpress';"
 
-    # Exécuter le script
-    mysql < /tmp/setup.sql
+    # Définir le mot de passe root
+    mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${DB_ROOT_PASSWORD}';"
+    mysql -e "FLUSH PRIVILEGES;"
 
     echo "Database setup complete!"
     mysqladmin shutdown
