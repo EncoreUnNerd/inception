@@ -8,12 +8,17 @@ DB_ROOT_PASSWORD=$(cat /run/secrets/db_root_password)
 mkdir -p /run/mysqld
 chown mysql:mysql /run/mysqld
 
-if [ ! -d "/var/lib/mysql/mysql" ]; then
+echo "=== MariaDB Setup ==="
+echo "MYSQL_DATABASE: $MYSQL_DATABASE"
+echo "MYSQL_USER: $MYSQL_USER"
+
+# Vérifier si la base est déjà initialisée en regardant si les tables système existent
+if [ ! -f "/var/lib/mysql/mysql/user.MYD" ]; then
     echo "Initializing database..."
     mysql_install_db --user=mysql --datadir=/var/lib/mysql
 
     echo "Starting MariaDB temporarily for setup..."
-    mysqld_safe --datadir=/var/lib/mysql &
+    mysqld_safe --datadir=/var/lib/mysql --bind-address=0.0.0.0 &
 
     # Attendre que MariaDB soit prêt
     until mysqladmin ping --silent; do
@@ -23,16 +28,28 @@ if [ ! -d "/var/lib/mysql/mysql" ]; then
 
     echo "Setting up database and users..."
     mysql -e "CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;"
-    mysql -e "CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${DB_PASSWORD}';"
+
+    # Créer l'utilisateur avec plusieurs patterns d'hôtes
+    mysql -e "CREATE USER '${MYSQL_USER}'@'%' IDENTIFIED BY '${DB_PASSWORD}';"
+    mysql -e "CREATE USER '${MYSQL_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';"
+    mysql -e "CREATE USER '${MYSQL_USER}'@'172.%' IDENTIFIED BY '${DB_PASSWORD}';"
+    mysql -e "CREATE USER '${MYSQL_USER}'@'%.network_wordpress' IDENTIFIED BY '${DB_PASSWORD}';"
+
+    # Accorder les privilèges
     mysql -e "GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';"
+    mysql -e "GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'localhost';"
+    mysql -e "GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'172.%';"
+    mysql -e "GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%.network_wordpress';"
+
     mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${DB_ROOT_PASSWORD}';"
     mysql -e "FLUSH PRIVILEGES;"
 
-    echo "Shutting down temporary MariaDB..."
-    mysqladmin shutdown
-
     echo "Database setup complete!"
+    mysqladmin shutdown
+    sleep 2
+else
+    echo "Database already initialized"
 fi
 
 echo "Starting MariaDB..."
-exec mysqld_safe --datadir=/var/lib/mysql
+exec mysqld_safe --datadir=/var/lib/mysql --bind-address=0.0.0.0
