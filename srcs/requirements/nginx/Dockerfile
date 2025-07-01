@@ -5,7 +5,7 @@ RUN apt-get update && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/*
 
-COPY ./nginx.conf /etc/nginx/sites-available/my-secure-site
+COPY conf/nginx.conf /etc/nginx/sites-available/my-secure-site
 
 RUN rm /etc/nginx/sites-enabled/default && \
 	ln -s /etc/nginx/sites-available/my-secure-site /etc/nginx/sites-enabled/
